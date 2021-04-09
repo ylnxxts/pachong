@@ -1,0 +1,60 @@
+#1. 定位到2021必看片
+#2. 从2021必看片中提取到子页面的链接地址
+#3. 请求子页面的链接地址，拿到我们想要的下载地址
+import re
+import requests
+
+
+# 免费代理IP不能保证永久有效，如果不能用可以更新
+# http://www.goubanjia.com/
+
+
+domain = 'https://www.dytt89.com/'
+
+headers = {
+    'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36'
+}
+
+
+resp = requests.get(domain,headers=headers)    #可以选择UA伪装，能得到结果
+
+#resp = requests.get(domain,verify=False)  #也可以选择去掉安全验证，也能得到结果
+
+resp.encoding = 'gb2312'    #指定字符集
+#print(resp.text)
+resp.close()
+
+#拿到ul里面的li
+obj1 = re.compile(r"2021必看热片.*?<ul>(?P<ul>.*?)</ul>",re.S)
+obj2 = re.compile(r"<a href='(?P<href>.*?)'",re.S)
+obj3 = re.compile(r'◎片　　名(?P<movie>.*?)<br />.*?<td style="WORD-WRAP:'
+                  r' break-word" bgcolor="#fdfddf"><a href="(?P<download>.*?)">',re.S)
+
+result1 = obj1.finditer(resp.text)
+child_href_list = []
+for it in result1 :
+    ul = it.group('ul')
+
+    #提取子页面链接:
+    result2 = obj2.finditer(ul)
+    for itt in result2 :
+        # 拼接子页面的url地址:  域名 + 子页面地址
+        child_href = domain + itt.group('href').strip('/')
+        child_href_list.append(child_href)      # 把子页面的链接保存起来
+
+# 提取子页面内容
+for href in child_href_list :
+    #child_resp = requests.get(url=href,verify=False)
+    child_resp = requests.get(url=href,headers=headers)
+    child_resp.encoding = 'gbk'
+    result3 = obj3.search(child_resp.text)
+
+    final_name = result3.group('movie')
+    final_url = result3.group('download')
+    with open('./结果.text','a',encoding='utf-8') as fp:  #这里的as fp就理解为把该文件设置为变量fp以便后续的操作
+        fp.write(final_name)
+        fp.write("          :")
+    with open('./结果.text','a',encoding='utf-8') as fp:  #这里的as fp就理解为把该文件设置为变量fp以便后续的操作
+        fp.write(final_url)
+        fp.write("\n\n")
+child_resp.close()
