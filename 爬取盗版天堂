@@ -5,10 +5,6 @@ import re
 import requests
 
 
-# 免费代理IP不能保证永久有效，如果不能用可以更新
-# http://www.goubanjia.com/
-
-
 domain = 'https://www.dytt89.com/'
 
 headers = {
