@@ -1,0 +1,52 @@
+# 1. 拿到主页面的源代码，然后提取到子页面的链接地址
+# 2. 通过href拿到子页面的内容，从子页面中找到图片的下载地址      img标签里面的src的值
+# 3. 下载图片
+import requests
+from bs4 import BeautifulSoup
+import time
+
+url='https://www.woyaogexing.com/touxiang/weixin/'
+
+headers = {
+    'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36'
+}
+
+resp = requests.get(url=url,headers=headers)
+resp.encoding = 'utf-8'     #处理乱码
+resp.close()
+
+# 把源代码交给bs
+main_page = BeautifulSoup(resp.text,"html.parser")
+main_page_content = main_page.find("div",class_='pMain').find_all("div",class_="txList")
+
+
+for img in main_page_content :
+    alist = img.find("a",class_="img")
+    href = 'https://www.woyaogexing.com'+alist.get('href')     # 直接通过get就可以拿到属性的值
+    # 拿到子页面的源代码
+    child_page_resp = requests.get(url=href,headers=headers)
+    child_page_resp.encoding = 'utf-8'
+    child_page_text = child_page_resp.text
+    child_page_resp.close()
+    # 从子页面中拿到图片的下载途径
+    child_page = BeautifulSoup(child_page_text,"html.parser")
+    p = child_page.find_all("li",class_="tx-img")
+    num1 = main_page_content.index(img)
+    for i in p :
+        img = i.find("img")
+        src = 'http:'+img.get("src")
+
+        # 下载图片
+        img_resp = requests.get(url=src,headers=headers)
+
+        img_resp.close()
+        num2 = p.index(i)
+        # img_resp.content    这里拿到的是字节
+        img_name = str(num1+1)+'-'+str(num2+1) +'.jepg'       # 取类似于“1-1”这样的名字，num+1是为了从1开始取
+        with open("img/"+img_name,mode="wb") as f :
+            f.write(img_resp.content)       # 将图片内容写入文件
+
+        print("over!!!",img_name)
+        time.sleep(2)
+        print("a")      #提示一下自己成功运行了
+print("all over!!!!")
